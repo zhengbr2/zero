@@ -17,10 +17,12 @@ type Conn struct {
 	sendCh     chan []byte
 	done       chan error
 	hbTimer    *time.Timer
+	hbTicker *time.Ticker
 	name       string
 	messageCh  chan *Message
 	hbInterval time.Duration
 	hbTimeout  time.Duration
+
 }
 
 // GetName Get conn name
@@ -41,9 +43,11 @@ func NewConn(c net.Conn, hbInterval time.Duration, hbTimeout time.Duration) *Con
 
 	conn.name = c.RemoteAddr().String()
 	conn.hbTimer = time.NewTimer(conn.hbInterval)
+	conn.hbTicker = time.NewTicker(conn.hbInterval)
 
 	if conn.hbInterval == 0 {
 		conn.hbTimer.Stop()
+		conn.hbTicker.Stop()
 	}
 
 	return conn
@@ -52,6 +56,7 @@ func NewConn(c net.Conn, hbInterval time.Duration, hbTimeout time.Duration) *Con
 // Close close connection
 func (c *Conn) Close() {
 	c.hbTimer.Stop()
+	c.hbTicker.Stop()
 	c.rawConn.Close()
 }
 
@@ -85,8 +90,10 @@ func (c *Conn) writeCoroutine(ctx context.Context) {
 				c.done <- err
 				log.Println("write failed:",err)
 			}
+			//c.hbTicker.Stop()
+			c.hbTicker=time.NewTicker(c.hbInterval)
 
-		case <-c.hbTimer.C:
+		case <-c.hbTicker.C:
 			hbMessage := NewMessage(MsgHeartbeat, hbData)
 			c.SendMessage(hbMessage)
 			log.Println("sending hb to client...")
@@ -147,6 +154,9 @@ func (c *Conn) readCoroutine(ctx context.Context) {
 			// 设置心跳timer
 			if c.hbInterval > 0 {
 				c.hbTimer.Reset(c.hbInterval)
+				log.Println("stop Ticker")
+				//c.hbTicker.Stop()
+				c.hbTicker=time.NewTicker(c.hbInterval)
 			}
 
 			if msg.GetID() == MsgHeartbeat {
