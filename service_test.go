@@ -1,13 +1,15 @@
 package zero
 
 import (
-	"fmt"
-	"net"
+		"net"
 	"testing"
 	"time"
+	"log"
 )
 
+
 func TestService(t *testing.T) {
+	log.SetFlags(log.Ldate|log.Lmicroseconds)
 	host := "127.0.0.1:18787"
 
 	ss, err := NewSocketService(host)
@@ -20,11 +22,11 @@ func TestService(t *testing.T) {
 	ss.RegMessageHandler(HandleMessage)
 	ss.RegConnectHandler(HandleConnect)
 	ss.RegDisconnectHandler(HandleDisconnect)
-	ss.SetHeartBeat(time.Second * 1, time.Second * 1)
+	ss.SetHeartBeat(time.Second * 1, time.Second * 7)
 
 	go NewClientConnect()
 
-	timer := time.NewTimer(time.Second * 5)
+	timer := time.NewTimer(time.Second * 7)
 	go func() {
 		<-timer.C
 		ss.Stop("stop service")
@@ -37,16 +39,16 @@ func TestService(t *testing.T) {
 }
 
 func HandleMessage(s *Session, msg *Message) {
-	fmt.Println("receive msgID:", msg)
-	fmt.Println("receive data:", string(msg.GetData()))
+	log.Println("receive msgID:", msg)
+	log.Println("receive data:", string(msg.GetData()))
 }
 
 func HandleDisconnect(s *Session, err error) {
-	fmt.Println(s.GetConn().GetName() + " lost.")
+	log.Println(s.GetConn().GetName() + " lost.")
 }
 
 func HandleConnect(s *Session) {
-	fmt.Println(s.GetConn().GetName() + " connected.")
+	log.Println(s.GetConn().GetName() + " connected.")
 }
 
 func NewClientConnect() {
@@ -61,10 +63,23 @@ func NewClientConnect() {
 		return
 	}
 
+
 	msg := NewMessage(1, []byte("Hello Zero!"))
 	data, err := Encode(msg)
 	if err != nil {
 		return
 	}
 	conn.Write(data)
+	log.Println("client sending msg 1")
+
+	time.Sleep(time.Second * 3)
+
+	msg = NewMessage(1, []byte("Hello Zero!"))
+	data, _= Encode(msg)
+	if err != nil {
+		return
+	}
+	conn.Write(data)
+	log.Println("client sending msg 2")
+
 }

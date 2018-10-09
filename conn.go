@@ -83,12 +83,13 @@ func (c *Conn) writeCoroutine(ctx context.Context) {
 
 			if _, err := c.rawConn.Write(pkt); err != nil {
 				c.done <- err
+				log.Println("write err:",err)
 			}
 
 		case <-c.hbTimer.C:
 			hbMessage := NewMessage(MsgHeartbeat, hbData)
-			log.Println("sending hb to client...")
 			c.SendMessage(hbMessage)
+			log.Println("sending hb to client...")
 		}
 	}
 }
@@ -107,6 +108,7 @@ func (c *Conn) readCoroutine(ctx context.Context) {
 				err := c.rawConn.SetReadDeadline(time.Now().Add(c.hbTimeout))
 				if err != nil {
 					c.done <- err
+					log.Println("read err 1:",err)
 					continue
 				}
 			}
@@ -115,6 +117,7 @@ func (c *Conn) readCoroutine(ctx context.Context) {
 			_, err := io.ReadFull(c.rawConn, buf)
 			if err != nil {
 				c.done <- err
+				log.Println("read err 2:",err)
 				continue
 			}
 
@@ -124,6 +127,7 @@ func (c *Conn) readCoroutine(ctx context.Context) {
 			err = binary.Read(bufReader, binary.LittleEndian, &dataSize)
 			if err != nil {
 				c.done <- err
+				log.Println("read err 3:",err)
 				continue
 			}
 
@@ -132,6 +136,7 @@ func (c *Conn) readCoroutine(ctx context.Context) {
 			_, err = io.ReadFull(c.rawConn, databuf)
 			if err != nil {
 				c.done <- err
+				log.Println("read err 4:",err)
 				continue
 			}
 
@@ -139,6 +144,7 @@ func (c *Conn) readCoroutine(ctx context.Context) {
 			msg, err := Decode(databuf)
 			if err != nil {
 				c.done <- err
+				log.Println("read err 5:",err)
 				continue
 			}
 
