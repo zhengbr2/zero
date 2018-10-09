@@ -22,7 +22,7 @@ func TestService(t *testing.T) {
 	ss.RegMessageHandler(HandleMessage)
 	ss.RegConnectHandler(HandleConnect)
 	ss.RegDisconnectHandler(HandleDisconnect)
-	ss.SetHeartBeat(time.Second * 1, time.Second * 7)
+	ss.SetHeartBeat(time.Second * 1, time.Second * 1)
 
 	go NewClientConnect()
 
@@ -44,7 +44,7 @@ func HandleMessage(s *Session, msg *Message) {
 }
 
 func HandleDisconnect(s *Session, err error) {
-	log.Println(s.GetConn().GetName() + " lost.")
+	log.Println(s.GetConn().GetName() + " lost.",err)
 }
 
 func HandleConnect(s *Session) {
