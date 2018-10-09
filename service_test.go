@@ -20,10 +20,11 @@ func TestService(t *testing.T) {
 	ss.RegMessageHandler(HandleMessage)
 	ss.RegConnectHandler(HandleConnect)
 	ss.RegDisconnectHandler(HandleDisconnect)
+	ss.SetHeartBeat(time.Second * 1, time.Second * 1)
 
 	go NewClientConnect()
 
-	timer := time.NewTimer(time.Second * 1)
+	timer := time.NewTimer(time.Second * 5)
 	go func() {
 		<-timer.C
 		ss.Stop("stop service")
@@ -31,6 +32,7 @@ func TestService(t *testing.T) {
 	}()
 
 	t.Log("service running on " + host)
+
 	ss.Serv()
 }
 

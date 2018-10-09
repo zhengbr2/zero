@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"time"
+	"log"
 )
 
 // Conn wrap net.Conn
@@ -86,6 +87,7 @@ func (c *Conn) writeCoroutine(ctx context.Context) {
 
 		case <-c.hbTimer.C:
 			hbMessage := NewMessage(MsgHeartbeat, hbData)
+			log.Println("sending hb to client...")
 			c.SendMessage(hbMessage)
 		}
 	}
