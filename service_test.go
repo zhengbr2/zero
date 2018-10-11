@@ -22,11 +22,11 @@ func TestService(t *testing.T) {
 	ss.RegMessageHandler(HandleMessage)
 	ss.RegConnectHandler(HandleConnect)
 	ss.RegDisconnectHandler(HandleDisconnect)
-	ss.SetHeartBeat(time.Second * 2, time.Second * 7)
+	ss.SetHeartBeat(time.Second * 1, time.Second * 4)
 
 	go NewClientConnect()
 
-	timer := time.NewTimer(time.Second * 7)
+	timer := time.NewTimer(time.Second * 8)
 	go func() {
 		<-timer.C
 		ss.Stop("stop service")
@@ -72,7 +72,7 @@ func NewClientConnect() {
 	conn.Write(data)
 	log.Println("client sending msg 1")
 
-	time.Sleep(time.Second * 15 / 10)
+	time.Sleep(time.Second * 3)
 
 	msg = NewMessage(1, []byte("Hello Zero!"))
 	data, _= Encode(msg)
