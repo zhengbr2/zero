@@ -10,20 +10,21 @@ import (
 	"time"
 )
 
+var HB_MAX = 3
+
 // Conn wrap net.Conn
 type Conn struct {
-	sid        string
-	rawConn    net.Conn
-	sendCh     chan []byte
-	done       chan error
-	name       string
-	messageCh  chan *Message
+	sid       string
+	rawConn   net.Conn
+	sendCh    chan []byte
+	done      chan error
+	name      string
+	messageCh chan *Message
 
 	hbTimer    *time.Timer
-	hbTicker   *time.Ticker
+	hbCount    int
 	hbInterval time.Duration
 	hbTimeout  time.Duration
-	hbNext <-chan  time.Time
 }
 
 // GetName Get conn name
@@ -44,11 +45,10 @@ func NewConn(c net.Conn, hbInterval time.Duration, hbTimeout time.Duration) *Con
 
 	conn.name = c.RemoteAddr().String()
 	conn.hbTimer = time.NewTimer(conn.hbInterval)
-	conn.hbTicker = time.NewTicker(conn.hbInterval)
 
 	if conn.hbInterval == 0 {
 		conn.hbTimer.Stop()
-		conn.hbTicker.Stop()
+
 	}
 
 	return conn
@@ -57,7 +57,6 @@ func NewConn(c net.Conn, hbInterval time.Duration, hbTimeout time.Duration) *Con
 // Close close connection
 func (c *Conn) Close() {
 	c.hbTimer.Stop()
-	c.hbTicker.Stop()
 	c.rawConn.Close()
 }
 
@@ -91,13 +90,18 @@ func (c *Conn) writeCoroutine(ctx context.Context) {
 				c.done <- err
 				log.Println("write failed:", err)
 			}
-			//c.hbTicker.Stop()
-			c.hbNext= time.Tick(c.hbInterval)
 
-		case <-c.hbNext:
-			hbMessage := NewMessage(MsgHeartbeat, hbData)
-			c.SendMessage(hbMessage)
-			log.Println("sending hb to client...")
+		case <-c.hbTimer.C:
+
+			if c.hbCount < HB_MAX {
+				c.hbTimer.Reset(c.hbInterval)
+				c.hbCount++
+				hbMessage := NewMessage(MsgHeartbeat, hbData)
+				c.SendMessage(hbMessage)
+				log.Println("sending hb to client...")
+			} else {
+				log.Println("reached heart beat threshold.")
+			}
 		}
 	}
 }
@@ -155,9 +159,8 @@ func (c *Conn) readCoroutine(ctx context.Context) {
 			// 设置心跳timer
 			if c.hbInterval > 0 {
 				c.hbTimer.Reset(c.hbInterval)
-				log.Println("reset Ticker")
-				//c.hbTicker.Stop()
-				c.hbNext= time.Tick(c.hbInterval)
+				c.hbCount = 0
+				log.Println("reset heart beat interval")
 
 			}
 

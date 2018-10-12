@@ -1,15 +1,14 @@
 package zero
 
 import (
-		"net"
+	"log"
+	"net"
 	"testing"
 	"time"
-	"log"
 )
 
-
 func TestService(t *testing.T) {
-	log.SetFlags(log.Ldate|log.Lmicroseconds)
+	log.SetFlags(log.Ldate | log.Lmicroseconds)
 	host := "127.0.0.1:18787"
 
 	ss, err := NewSocketService(host)
@@ -22,7 +21,7 @@ func TestService(t *testing.T) {
 	ss.RegMessageHandler(HandleMessage)
 	ss.RegConnectHandler(HandleConnect)
 	ss.RegDisconnectHandler(HandleDisconnect)
-	ss.SetHeartBeat(time.Second * 1, time.Second * 4)
+	ss.SetHeartBeat(time.Second*1, time.Second*4)
 
 	go NewClientConnect()
 
@@ -44,7 +43,7 @@ func HandleMessage(s *Session, msg *Message) {
 }
 
 func HandleDisconnect(s *Session, err error) {
-	log.Println(s.GetConn().GetName() + " lost.",err)
+	log.Println(s.GetConn().GetName()+" lost.", err)
 }
 
 func HandleConnect(s *Session) {
@@ -63,7 +62,6 @@ func NewClientConnect() {
 		return
 	}
 
-
 	msg := NewMessage(1, []byte("Hello Zero!"))
 	data, err := Encode(msg)
 	if err != nil {
@@ -72,10 +70,10 @@ func NewClientConnect() {
 	conn.Write(data)
 	log.Println("client sending msg 1")
 
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Second * 4)
 
 	msg = NewMessage(1, []byte("Hello Zero!"))
-	data, _= Encode(msg)
+	data, _ = Encode(msg)
 	if err != nil {
 		return
 	}
