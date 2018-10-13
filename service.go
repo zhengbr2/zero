@@ -6,7 +6,7 @@ import (
 	"net"
 	"sync"
 	"time"
-)
+	)
 
 // SocketService struct
 type SocketService struct {
@@ -77,6 +77,7 @@ func (s *SocketService) Serv() {
 		select {
 
 		case <-s.stopCh:
+			//log.Println("server is stopped: " + (<-s.stopCh).Error())
 			return
 		}
 	}
@@ -119,6 +120,7 @@ func (s *SocketService) connectHandler(ctx context.Context, c net.Conn) {
 		case err := <-conn.done:
 
 			if s.onDisconnect != nil {
+				s.sessions.Delete(session.GetSessionID())
 				s.onDisconnect(session, err)
 			}
 			return
